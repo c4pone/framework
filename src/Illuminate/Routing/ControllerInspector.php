@@ -80,7 +80,7 @@ class ControllerInspector
     {
         $verb = $this->getVerb($name = $method->name);
 
-        $uri = $this->addUriParameters($method, $plain = $this->getPlainUri($name, $prefix));
+        $uri = $this->addUriParameters($method->getParameters(), $plain = $this->getPlainUri($name, $prefix));
 
         return compact('verb', 'plain', 'uri');
     }
@@ -123,23 +123,23 @@ class ControllerInspector
     /**
      * Gets the parameters from a method in the controller.
      *
-     * @param  ReflectionMethod  $method
-     * @param  string            $uri
+     * @param  array  $parameters
+     * @param  string  $uri
      * @return string
      */
-    public function addUriParameters(ReflectionMethod $method, $uri)
+    public function addUriParameters(array $parameters, $uri)
     {
-        foreach ($method->getParameters() as $parameter) {
-            //if the parameter has a class we assume it is
-            //not part of the the uri
-            if ($parameter->getClass()) {
-                continue;
-            }
+        foreach ($parameters as $parameter) {
 
-            $uri .= sprintf('/{%s%s}',
-                $parameter->name,
-                ($parameter->isDefaultValueAvailable()) ? '?' : ''
-            );
+            $class = $parameter->getClass();
+
+            //only if the class is a model or null we add the parameter to the uri
+            if (is_null($class) || $class->isSubclassOf('Illuminate\Database\Eloquent\Model')) {
+                $uri .= sprintf('/{%s%s}',
+                    $parameter->name,
+                    ($parameter->isDefaultValueAvailable()) ? '?' : ''
+                );
+            }
         }
 
         return $uri;
